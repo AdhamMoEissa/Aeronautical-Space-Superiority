@@ -1,0 +1,23 @@
+# Blender MTL File: 'F-35B_Medium_Quality.blend'
+# Material Count: 2
+
+newmtl Cockpit
+Ns 359.999993
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+
+newmtl bodyMaterial
+Ns 159.999981
+Ka 0.500000 0.500000 0.500000
+Kd 0.096000 0.105600 0.120000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Kd F-35B_Medium_Quality_Body_Base_Color.png
