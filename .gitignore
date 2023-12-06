@@ -7,3 +7,4 @@ UserSettings/
 Temp/
 Logs/
 Library/
+*.cache
