@@ -18,7 +18,13 @@ public class Movement : MonoBehaviour
     private double forceTimeScalar;
     public float maximumThrustForce;
     public float forceIncreaseRate;
-    public float currentForceOutput;
+    public float zeroLiftDragCoefficient;
+    public float maxLiftCoefficient;
+    public float wingArea;
+    public float airDensity;
+    public Vector3 v;
+    public float stallAngle;
+    public float wingSpan;
 
     // Start is called before the first frame update
     void Start()
@@ -33,29 +39,11 @@ public class Movement : MonoBehaviour
     {
         Vector3 curPosition = transform.position;
 
-
-        mouseChange.x = UnityEngine.Input.GetAxis("Mouse X");
-        mouseChange.y = UnityEngine.Input.GetAxis("Mouse Y");
-        float horizontalInput = UnityEngine.Input.GetAxis("Horizontal");
-
-        float roll = mouseChange.x;
-        float pitch = mouseChange.y;
-        float yaw = (float)0.1 * horizontalInput;
-
-        if (pitch >  90) { pitch = 90; }
-        if(pitch < -90) { pitch = -90; }
-
-        Quaternion rotationQuat = rb.transform.rotation;
-        //rotationQuat *= Quaternion.AngleAxis(pitch, new Vector3(Mathf.Cos(yaw), 0, Mathf.Sin(yaw)));
-        //rotationQuat *= Quaternion.AngleAxis(roll, new Vector3(Mathf.Sin(yaw), 0, Mathf.Cos(yaw)));
-
-        rotationQuat *= Quaternion.Euler(pitch, yaw, roll);
-        
-        rb.transform.rotation = rotationQuat;
+        rb.transform.rotation = calculateRotation();
         direction = rb.transform;
-        Vector3 curForwardDir = -direction.forward;
-        Vector3 curRightDir = -direction.right;
-        Vector3 curUpDir = direction.up;
+        Vector3 curForwardDir = Vector3.Normalize(-direction.forward);
+        Vector3 curRightDir = Vector3.Normalize(-direction.right);
+        Vector3 curUpDir = Vector3.Normalize(direction.up);
 
 
         float verticalInput = UnityEngine.Input.GetAxis("Vertical");
@@ -75,9 +63,108 @@ public class Movement : MonoBehaviour
         Vector3 ThrustForce = curForwardDir * thrustForceMagnitude;
         rb.AddForceAtPosition(ThrustForce, rb.centerOfMass);
 
-        Vector3 liftForce = curUpDir * Mathf.Pow(Vector3.Distance(rb.velocity, Vector3.zero), 2) / 2 * (float)78.04 * (float)1.293;
+        float v2 = Mathf.Pow(Mathf.Max(Vector3.Distance(rb.velocity, Vector3.zero) * Vector3.Dot(Vector3.Normalize(rb.velocity), curForwardDir), 0), 2);
+        float dynamicPressure = (float)0.5 * v2 * airDensity;
+
+        float liftCoefficient = calculateLiftCoefficient(rb);
+        Vector3 liftForce = curUpDir * liftCoefficient * dynamicPressure * wingArea;
         rb.AddForceAtPosition(liftForce, rb.centerOfMass);
 
-        currentForceOutput = Mathf.Abs(thrustForceMagnitude);
+
+
+
+        v2 = Mathf.Pow(Vector3.Distance(rb.velocity, Vector3.zero), 2);
+        dynamicPressure = 0.5f * v2 * airDensity;
+
+        float dragCoefficient = calculateDragCoefficient(liftCoefficient);
+        Vector3 DragForce = Vector3.Normalize(-rb.velocity) * dragCoefficient * dynamicPressure * wingArea;
+        rb.AddForceAtPosition(DragForce, rb.centerOfMass);
+
+        v = new Vector3(liftCoefficient, liftCoefficient, liftCoefficient); // Vector3.Distance(rb.velocity, Vector3.zero);
+    }
+
+    private float lastMouseChangeTime;
+
+    Quaternion calculateRotation()
+    {
+        Quaternion rot = rb.transform.rotation;
+
+        mouseChange.x = UnityEngine.Input.GetAxis("Mouse X");
+        mouseChange.y = UnityEngine.Input.GetAxis("Mouse Y");
+        float horizontalInput = UnityEngine.Input.GetAxis("Horizontal");
+
+        float roll = 2 * mouseChange.x;
+        float pitch = 2 * mouseChange.y;
+        float yaw = (float)0.1 * horizontalInput;
+
+        if(roll != 0)
+        {
+            lastMouseChangeTime = Time.time;
+        }
+
+        Quaternion from = rot * Quaternion.Euler(pitch, yaw, roll);
+        
+        if(Time.time - lastMouseChangeTime > 1)
+        { //roll calculations
+            Vector3 angles = rot.eulerAngles;
+            float phi = (angles.z < 90 || angles.z > 270) ? 0 : 180;
+            Quaternion to = Quaternion.Euler(pitch + angles.x, yaw + angles.y, phi);
+
+
+            float timeScalar = 0.1f * Mathf.Clamp01(0.1f * (Time.time - lastMouseChangeTime));
+            rot = Quaternion.RotateTowards(from, to, timeScalar * Mathf.Abs( Mathf.Pow(Mathf.Sin(2 * (rot.eulerAngles.z * Mathf.Deg2Rad)), 2) ));
+        }
+        else 
+        {
+            rot = from;
+        }
+
+
+        return rot;
+    }
+
+    float calculateLiftCoefficient(Rigidbody body)
+    {
+        float Cl, cosAngleToCoefficientRatio;
+        cosAngleToCoefficientRatio = maxLiftCoefficient / Mathf.Cos(stallAngle);
+
+        float signOfAlpha = -Mathf.Sign(Vector3.Dot(Vector3.Normalize(body.velocity), body.transform.up));
+        float alpha = Mathf.Rad2Deg * Mathf.Acos(Vector3.Dot(Vector3.Normalize(body.velocity), -body.transform.forward));
+        if (alpha < stallAngle)
+        {
+            Cl = alpha;
+        }
+        else if (alpha >= stallAngle && alpha < 2 * stallAngle)
+        {
+            Cl = (2 * stallAngle - alpha);
+        }
+        else
+        {
+            Cl = stallAngle * 0.5f;
+        }
+        
+
+        Cl = Cl / stallAngle;
+        Cl = Mathf.Pow(Cl, 2);
+        Cl = Cl * signOfAlpha;
+        Cl = Cl * maxLiftCoefficient;
+
+        return Cl;
+    }
+
+    float calculateDragCoefficient(float liftCoefficient)
+    {
+        float Cd0, Cd;
+        Cd0 = zeroLiftDragCoefficient;
+
+        float AspectRatio = wingSpan * wingSpan / wingArea;
+        float OswaldEfficiency = (float)0.5;
+
+        float numerator = Mathf.Max(Mathf.Pow(liftCoefficient, 2), 0);
+        float denominator = Mathf.PI * OswaldEfficiency * AspectRatio;
+
+        Cd = Cd0 + numerator / denominator;
+
+        return Cd;
     }
 }
