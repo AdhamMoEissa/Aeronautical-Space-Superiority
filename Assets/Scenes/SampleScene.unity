@@ -1436,7 +1436,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 59d724d680bb927428f492247e3cd36f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1786,15 +1786,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28c377c225ea6254a968eca42513f6b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mouseChange: {x: 0, y: 0}
   maximumThrustForce: 308000
   forceIncreaseRate: 20
   zeroLiftDragCoefficient: 0.05
   maxLiftCoefficient: 1.5
   wingArea: 78.04
   airDensity: 1.23
-  v: {x: 0, y: 0, z: 0}
   stallAngle: 15
   wingSpan: 13.56
+  mouseSensitivity: 1
+  maxRollAngle: 90
+  maxPitchAngle: 90
+  maxYawAngle: 90
 --- !u!23 &2498733330843983058
 MeshRenderer:
   m_ObjectHideFlags: 0
