@@ -24,7 +24,7 @@ public class CameraMovement : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void LateUpdate()
     {
         scroll += UnityEngine.Input.mouseScrollDelta.y * scrollSensitivity;
         if (scroll < 10)
