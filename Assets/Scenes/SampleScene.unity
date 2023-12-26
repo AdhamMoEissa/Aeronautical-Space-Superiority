@@ -1267,9 +1267,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e687b8157695d0b4bace341ddbaa6606, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  objectToFollow: {fileID: 991042662320084645}
   scrollSensitivity: 0.5
   sensitivity: 0.1
-  characterObject: {fileID: 471528449642122271}
+  topSpeed: 400
 --- !u!1 &1116382587
 GameObject:
   m_ObjectHideFlags: 0
@@ -1771,7 +1772,7 @@ Rigidbody:
   m_ImplicitTensor: 1
   m_UseGravity: 1
   m_IsKinematic: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_Constraints: 112
   m_CollisionDetection: 0
 --- !u!114 &991042662320084647
@@ -1786,19 +1787,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28c377c225ea6254a968eca42513f6b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mouseChange: {x: 0, y: 0}
-  maximumThrustForce: 308000
-  forceIncreaseRate: 20
-  zeroLiftDragCoefficient: 0.05
-  maxLiftCoefficient: 1.5
-  wingArea: 78.04
-  airDensity: 1.23
-  stallAngle: 15
-  wingSpan: 13.56
-  mouseSensitivity: 1
-  maxRollAngle: 90
-  maxPitchAngle: 90
-  maxYawAngle: 90
+  m_MaximumThrustForce: 308000
+  m_ForceIncreaseRate: 20
+  m_ZeroLiftDragCoefficient: 0.05
+  m_MaxLiftCoefficient: 1
+  m_WingArea: 78.04
+  m_AirDensity: 1.23
+  m_StallAngle: 20
+  m_WingSpan: 14
+  m_MouseSensitivity: 1
+  m_LinearMouseMovement: 1
+  m_MaxDeltaAngle: {x: 90, y: 30, z: 60}
+  m_MinDeltaAngle: {x: -60, y: -30, z: -60}
 --- !u!23 &2498733330843983058
 MeshRenderer:
   m_ObjectHideFlags: 0

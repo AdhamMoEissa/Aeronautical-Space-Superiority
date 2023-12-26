@@ -7,20 +7,24 @@ using UnityEngine.UIElements;
 
 public class CameraMovement : MonoBehaviour
 {
-    private Vector3 direction;
     private Transform camTrans;
-    private Transform objectToFollow;
-    private float scroll;
+    private Camera cam;
+    public GameObject objectToFollow;
+    private Rigidbody objectRigidBody;
+	private float scroll;
     public float scrollSensitivity;
     public float sensitivity;
-    public Transform characterObject;
+    public float topSpeed;
     // Start is called before the first frame update
     void Start()
     {
         camTrans = GetComponent<Transform>();
-        objectToFollow = characterObject;
-        camTrans.position = objectToFollow.position + new Vector3(0, 1, 3);
-        camTrans.forward = objectToFollow.forward;
+        camTrans.position = objectToFollow.transform.position + new Vector3(0, 1, 3);
+        camTrans.forward = objectToFollow.transform.forward;
+
+		cam = GetComponent<Camera>();
+
+		objectToFollow.TryGetComponent<Rigidbody>(out objectRigidBody);
     }
 
     // Update is called once per frame
@@ -32,7 +36,10 @@ public class CameraMovement : MonoBehaviour
         if (scroll > 100)
             scroll = 100;
 
-        camTrans.position = objectToFollow.position + scroll * Vector3.Normalize(5 * objectToFollow.forward + 2 * objectToFollow.up);
-        camTrans.LookAt(objectToFollow.position + 3 * objectToFollow.up, objectToFollow.up);
+        camTrans.position = objectToFollow.transform.position + scroll * Vector3.Normalize(5 * objectToFollow.transform.forward + 2 * objectToFollow.transform.up);
+        camTrans.LookAt(objectToFollow.transform.position + 3 * objectToFollow.transform.up, objectToFollow.transform.up);
+
+        float rigidBodySpeed = Vector3.Distance(objectRigidBody.velocity, Vector3.zero);
+        cam.fieldOfView = Mathf.Lerp(60f, 100f, rigidBodySpeed/topSpeed);
     }
 }

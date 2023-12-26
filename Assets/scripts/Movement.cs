@@ -11,34 +11,33 @@ using UnityEngine.Windows;
 
 public class Movement : MonoBehaviour
 {
-    private Vector2 mouseChange;
-    private Transform jetBody;
-    private Rigidbody rb;
-    private float thrustForceMagnitude;
-    private double forceTimeScalar;
-    public float maximumThrustForce;
-    public float forceIncreaseRate;
-    public float zeroLiftDragCoefficient;
-    public float maxLiftCoefficient;
-    public float wingArea;
-    public float airDensity;
-    public float stallAngle;
-    public float wingSpan;
+    private Vector2 m_MouseChange;
+    private Transform m_JetBody;
+    private Rigidbody m_RigidBody;
+    private float m_ThrustForceMagnitude;
+    private double m_ThrustScalar;
+    public float m_MaximumThrustForce;
+    public float m_ForceIncreaseRate;
+    public float m_ZeroLiftDragCoefficient;
+    public float m_MaxLiftCoefficient;
+    public float m_WingArea;
+    public float m_AirDensity;
+    public float m_StallAngle;
+    public float m_WingSpan;
 
-    public float mouseSensitivity;
+    public float m_MouseSensitivity;
+    public bool m_LinearMouseMovement;
 
-    public float maxRollAngle;
-    public float maxPitchAngle;
-    public float maxYawAngle;
-
+    public Vector3 m_MaxDeltaAngle;
+    public Vector3 m_MinDeltaAngle;
 
 
     // Start is called before the first frame update
     void Start()
     {
-        rb = GetComponent<Rigidbody>();
-        Transform jetBody = rb.transform;
-        forceTimeScalar = 0;
+        m_RigidBody = GetComponent<Rigidbody>();
+        Transform m_JetBody = m_RigidBody.transform;
+        m_ThrustScalar = 0;
     }
 
     // Update is called once per frame
@@ -46,67 +45,81 @@ public class Movement : MonoBehaviour
     {
         Vector3 curPosition = transform.position;
 
-        rb.transform.rotation = calculateRotation();
-        jetBody = rb.transform;
-        Vector3 curForwardDir = Vector3.Normalize(-jetBody.forward);
-        Vector3 curRightDir = Vector3.Normalize(-jetBody.right);
-        Vector3 curUpDir = Vector3.Normalize(jetBody.up);
+        m_RigidBody.transform.rotation = calculateRotation();
+        m_JetBody = m_RigidBody.transform;
+        Vector3 curForwardDir = Vector3.Normalize(-m_JetBody.forward);
+        Vector3 curRightDir = Vector3.Normalize(-m_JetBody.right);
+        Vector3 curUpDir = Vector3.Normalize(m_JetBody.up);
 
 
         float verticalInput = UnityEngine.Input.GetAxis("Vertical");
-        float upInput = UnityEngine.Input.GetKey(KeyCode.Space) ? 1.0f : 0.0f;
-
-        if(verticalInput != 0)
-            forceTimeScalar += forceIncreaseRate * Time.deltaTime;
-        else
-            forceTimeScalar = 0;
-
-        if(forceTimeScalar > (UnityEngine.Input.GetKey(KeyCode.LeftShift) ? 100 : 50))
-            forceTimeScalar = (UnityEngine.Input.GetKey(KeyCode.LeftShift) ? 100 : 50);
-
-            thrustForceMagnitude = verticalInput * maximumThrustForce * (float)(forceTimeScalar / 100.0);
+        m_ThrustScalar += m_ForceIncreaseRate * Time.deltaTime * verticalInput;
+        if(m_ThrustScalar < 0)
+            m_ThrustScalar = 0;
+        if(m_ThrustScalar > 100)
+            m_ThrustScalar = 100;
+        
+        m_ThrustForceMagnitude = m_MaximumThrustForce * (float)(m_ThrustScalar / 100.0);
 
 
-        Vector3 ThrustForce = curForwardDir * thrustForceMagnitude;
-        rb.AddForceAtPosition(ThrustForce, rb.centerOfMass);
+        Vector3 ThrustForce = curForwardDir * m_ThrustForceMagnitude;
+        m_RigidBody.AddForceAtPosition(ThrustForce, m_RigidBody.centerOfMass);
 
-        float v2 = Mathf.Pow(Mathf.Max(Vector3.Distance(rb.velocity, Vector3.zero) * Vector3.Dot(Vector3.Normalize(rb.velocity), curForwardDir), 0), 2);
-        float dynamicPressure = (float)0.5 * v2 * airDensity;
+        float v2 = Mathf.Pow(Mathf.Max(Vector3.Distance(m_RigidBody.velocity, Vector3.zero) * Vector3.Dot(Vector3.Normalize(m_RigidBody.velocity), curForwardDir), 0), 2);
+        float dynamicPressure = (float)0.5 * v2 * m_AirDensity;
 
-        float liftCoefficient = calculateLiftCoefficient(rb);
-        Vector3 liftForce = curUpDir * liftCoefficient * dynamicPressure * wingArea;
-        rb.AddForceAtPosition(liftForce, rb.centerOfMass);
-
-
+        float liftCoefficient = calculateLiftCoefficient(m_RigidBody);
+        Vector3 liftForce = curUpDir * liftCoefficient * dynamicPressure * m_WingArea;
+        m_RigidBody.AddForceAtPosition(liftForce, m_RigidBody.centerOfMass);
 
 
-        v2 = Mathf.Pow(Vector3.Distance(rb.velocity, Vector3.zero), 2);
-        dynamicPressure = 0.5f * v2 * airDensity;
+        v2 = Mathf.Pow(Vector3.Distance(m_RigidBody.velocity, Vector3.zero), 2);
+        dynamicPressure = 0.5f * v2 * m_AirDensity;
 
         float dragCoefficient = calculateDragCoefficient(liftCoefficient);
-        Vector3 DragForce = Vector3.Normalize(-rb.velocity) * dragCoefficient * dynamicPressure * wingArea;
-        rb.AddForceAtPosition(DragForce, rb.centerOfMass);
+        Vector3 DragForce = Vector3.Normalize(-m_RigidBody.velocity) * dragCoefficient * dynamicPressure * m_WingArea;
+        m_RigidBody.AddForceAtPosition(DragForce, m_RigidBody.centerOfMass);
     }
 
     private float lastMouseChangeTime;
-
     Quaternion calculateRotation()
     {
-        Quaternion from, rot = rb.transform.rotation;
+        Quaternion from, rot = m_RigidBody.transform.rotation;
 
-        mouseChange.x = UnityEngine.Input.GetAxis("Mouse X");
-        mouseChange.y = UnityEngine.Input.GetAxis("Mouse Y");
-        mouseChange *= mouseSensitivity;
-        float horizontalInput = UnityEngine.Input.GetAxis("Horizontal");
+        //m_MouseChange.x = UnityEngine.Input.GetAxis("Mouse X");
+        //m_MouseChange.y = UnityEngine.Input.GetAxis("Mouse Y");
 
-        float pitch = Mathf.Clamp(mouseChange.y, -maxPitchAngle, maxPitchAngle);
-        
-        float yaw = Mathf.Clamp(horizontalInput, -maxYawAngle, maxYawAngle);
-
-        float roll = Mathf.Clamp(mouseChange.x, -maxRollAngle, maxRollAngle);
+        m_MouseChange.x = 2 * (UnityEngine.Input.mousePosition.x - UnityEngine.Screen.width / 2) / UnityEngine.Screen.width;
+		m_MouseChange.y = 2 * (UnityEngine.Input.mousePosition.y - UnityEngine.Screen.height / 2) / UnityEngine.Screen.height;
 
 
-        if (roll != 0)
+        if(!m_LinearMouseMovement)
+        {
+            m_MouseChange.x = m_MouseChange.x * m_MouseChange.x * Mathf.Sign(m_MouseChange.x);
+		    m_MouseChange.y = m_MouseChange.y * m_MouseChange.y * Mathf.Sign(m_MouseChange.y);
+        }
+
+        m_MouseChange *= Mathf.Clamp01(m_MouseSensitivity);
+
+        float pitch, yaw, roll;
+        {
+            if(m_MouseChange.y > 0)
+                pitch = Mathf.Lerp(0, m_MaxDeltaAngle.x * Time.deltaTime, m_MouseChange.y);
+            else
+                pitch = Mathf.Lerp(0, m_MinDeltaAngle.x * Time.deltaTime, -m_MouseChange.y);
+            
+            float horizontalInput = UnityEngine.Input.GetAxis("Horizontal");
+            yaw = Mathf.Clamp(horizontalInput, m_MinDeltaAngle.y * Time.deltaTime, m_MaxDeltaAngle.y * Time.deltaTime);
+
+			if(m_MouseChange.x > 0)
+				roll = Mathf.Lerp(0, m_MaxDeltaAngle.z * Time.deltaTime, m_MouseChange.x);
+			else
+				roll = Mathf.Lerp(0, m_MinDeltaAngle.z * Time.deltaTime, -m_MouseChange.x);
+
+		}
+
+
+		if(UnityEngine.Input.GetAxis("Mouse X") != 0)
         {
             lastMouseChangeTime = Time.time;
         }
@@ -120,8 +133,8 @@ public class Movement : MonoBehaviour
             Quaternion to = Quaternion.Euler(pitch + angles.x, yaw + angles.y, phi);
 
 
-            float timeScalar = 0.2f * Mathf.Clamp01(0.1f * (Time.time - lastMouseChangeTime));
-            rot = Quaternion.RotateTowards(from, to, timeScalar * Mathf.Abs( Mathf.Pow(Mathf.Sin(2 * (rot.eulerAngles.z * Mathf.Deg2Rad)), 2) ));
+            float timeScalar = 0.1f * Mathf.Clamp01(0.2f * (Time.time - lastMouseChangeTime));
+            rot = Quaternion.RotateTowards(from, to, timeScalar * Mathf.Pow(Mathf.Sin(2 * (rot.eulerAngles.z * Mathf.Deg2Rad)), 2));
         }
         else 
         {
@@ -135,28 +148,28 @@ public class Movement : MonoBehaviour
     float calculateLiftCoefficient(Rigidbody body)
     {
         float Cl, cosAngleToCoefficientRatio;
-        cosAngleToCoefficientRatio = maxLiftCoefficient / Mathf.Cos(stallAngle);
+        cosAngleToCoefficientRatio = m_MaxLiftCoefficient / Mathf.Cos(m_StallAngle);
 
         float signOfAlpha = -Mathf.Sign(Vector3.Dot(Vector3.Normalize(body.velocity), body.transform.up));
         float alpha = Mathf.Rad2Deg * Mathf.Acos(Vector3.Dot(Vector3.Normalize(body.velocity), -body.transform.forward));
-        if (alpha < stallAngle)
+        if (alpha < m_StallAngle)
         {
             Cl = alpha;
         }
-        else if (alpha >= stallAngle && alpha < 2 * stallAngle)
+        else if (alpha >= m_StallAngle && alpha < 2 * m_StallAngle)
         {
-            Cl = (2 * stallAngle - alpha);
+            Cl = (2 * m_StallAngle - alpha);
         }
         else
         {
-            Cl = stallAngle * 0.5f;
+            Cl = m_StallAngle * 0.5f;
         }
         
 
-        Cl = Cl / stallAngle;
+        Cl = Cl / m_StallAngle;
         Cl = Mathf.Pow(Cl, 2);
         Cl = Cl * signOfAlpha;
-        Cl = Cl * maxLiftCoefficient;
+        Cl = Cl * m_MaxLiftCoefficient;
 
         return Cl;
     }
@@ -164,9 +177,9 @@ public class Movement : MonoBehaviour
     float calculateDragCoefficient(float liftCoefficient)
     {
         float Cd0, Cd;
-        Cd0 = zeroLiftDragCoefficient;
+        Cd0 = m_ZeroLiftDragCoefficient;
 
-        float AspectRatio = wingSpan * wingSpan / wingArea;
+        float AspectRatio = m_WingSpan * m_WingSpan / m_WingArea;
         float OswaldEfficiency = (float)0.5;
 
         float numerator = Mathf.Max(Mathf.Pow(liftCoefficient, 2), 0);
