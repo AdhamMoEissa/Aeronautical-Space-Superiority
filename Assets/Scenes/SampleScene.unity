@@ -1789,16 +1789,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_MaximumThrustForce: 308000
   m_ForceIncreaseRate: 20
-  m_ZeroLiftDragCoefficient: 0.05
+  m_ZeroLiftDragCoefficient: 0.02
   m_MaxLiftCoefficient: 1
   m_WingArea: 78.04
   m_AirDensity: 1.23
   m_StallAngle: 20
   m_WingSpan: 14
   m_MouseSensitivity: 1
-  m_LinearMouseMovement: 1
+  m_LinearMouseMovement: 0
   m_MaxDeltaAngle: {x: 90, y: 30, z: 60}
   m_MinDeltaAngle: {x: -60, y: -30, z: -60}
+  mousePos: {x: 0, y: 0}
+  centerScreen: {x: 0, y: 0}
+  difference: {x: 0, y: 0}
 --- !u!23 &2498733330843983058
 MeshRenderer:
   m_ObjectHideFlags: 0

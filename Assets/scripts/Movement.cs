@@ -82,7 +82,12 @@ public class Movement : MonoBehaviour
     }
 
     private float lastMouseChangeTime;
-    Quaternion calculateRotation()
+
+    public Vector2 mousePos;
+    public Vector2 centerScreen;
+    public Vector2 difference;
+
+	Quaternion calculateRotation()
     {
         Quaternion from, rot = m_RigidBody.transform.rotation;
 
@@ -132,17 +137,25 @@ public class Movement : MonoBehaviour
             float phi = (angles.z < 90 || angles.z > 270) ? 0 : 180;
             Quaternion to = Quaternion.Euler(pitch + angles.x, yaw + angles.y, phi);
 
+            rot = Quaternion.RotateTowards(from, to, Mathf.Max(Quaternion.Angle(from, to), 0.1f) * Time.deltaTime);
 
-            float timeScalar = 0.1f * Mathf.Clamp01(0.2f * (Time.time - lastMouseChangeTime));
-            rot = Quaternion.RotateTowards(from, to, timeScalar * Mathf.Pow(Mathf.Sin(2 * (rot.eulerAngles.z * Mathf.Deg2Rad)), 2));
+            mousePos = new Vector2(UnityEngine.Input.mousePosition.x, UnityEngine.Input.mousePosition.y);
+            centerScreen = new Vector2(UnityEngine.Screen.width / 2, mousePos.y);
+
+            Vector2 temp = Vector2.Lerp(mousePos, (mousePos + centerScreen) / 2, 0.1f * (Time.time - lastMouseChangeTime));
+			UnityEngine.InputSystem.Mouse.current.WarpCursorPosition(temp);
         }
         else 
         {
             rot = from;
         }
 
+		mousePos = new Vector2(UnityEngine.Input.mousePosition.x, UnityEngine.Input.mousePosition.y);
+		centerScreen = new Vector2(UnityEngine.Screen.width / 2, mousePos.y);
+        difference = (mousePos * 1.95f + centerScreen * 0.05f) / 2;
 
-        return rot;
+
+		return rot;
     }
 
     float calculateLiftCoefficient(Rigidbody body)
